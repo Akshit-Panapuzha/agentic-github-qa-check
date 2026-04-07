@@ -1,6 +1,8 @@
 # agentic-github-qa-check
 
-A Docker-based GitHub Action that runs pylint on changed Python files in a PR and posts inline review comments. Fails the Actions run when any lint issues are found.
+A Docker-based GitHub Action that lints changed files in a PR and posts inline review comments. Fails the Actions run when any lint issues are found.
+
+Supports Python, JavaScript, TypeScript, and C#.
 
 ## Usage
 
@@ -22,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run QA Linter
-        uses: Akshit-Panapuzha/agentic-github-qa-check@v1
+        uses: Akshit-Panapuzha/agentic-github-qa-check@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ github.event.pull_request.number }}
@@ -32,6 +34,15 @@ jobs:
 ```
 
 No additional secrets required beyond the built-in `GITHUB_TOKEN`.
+
+## Supported languages
+
+| Language | Extensions | Tool |
+|----------|------------|------|
+| Python | `.py` | pylint |
+| JavaScript | `.js` `.jsx` `.mjs` `.cjs` | ESLint |
+| TypeScript | `.ts` `.tsx` | ESLint + @typescript-eslint |
+| C# | `.cs` | dotnet-format |
 
 ## Configuration
 
@@ -52,11 +63,14 @@ All fields are optional. Shown values are the defaults.
 
 ## Severity levels
 
-| Pylint type | Severity | Behaviour |
-|-------------|----------|-----------|
-| Fatal / Error | critical | Inline PR review comment |
-| Warning | medium | Inline PR review comment |
-| Convention / Refactor | low | Collapsible summary comment |
+| Tool | Output | Severity | Behaviour |
+|------|--------|----------|-----------|
+| pylint | Fatal / Error | critical | Inline PR review comment |
+| pylint | Warning | medium | Inline PR review comment |
+| pylint | Convention / Refactor | low | Collapsible summary comment |
+| ESLint | error (severity 2) | critical | Inline PR review comment |
+| ESLint | warning (severity 1) | medium | Inline PR review comment |
+| dotnet-format | formatting issue | low | Collapsible summary comment |
 
 ## Pass/fail
 
