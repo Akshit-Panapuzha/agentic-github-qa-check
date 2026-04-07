@@ -12,15 +12,12 @@ RUN apt-get update && apt-get install -y curl && \
     npm install -g eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# .NET SDK 8 (dotnet-format is built-in since .NET 6)
-RUN apt-get update && \
-    apt-get install -y wget apt-transport-https && \
-    wget https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
-    dpkg -i packages-microsoft-prod.deb && \
-    rm packages-microsoft-prod.deb && \
-    apt-get update && \
-    apt-get install -y dotnet-sdk-8.0 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# .NET SDK 8 via official install script (avoids apt repo SHA1 signing key issue)
+RUN curl -fsSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh && \
+    chmod +x dotnet-install.sh && \
+    ./dotnet-install.sh --channel 8.0 --install-dir /usr/local/dotnet && \
+    rm dotnet-install.sh && \
+    ln -s /usr/local/dotnet/dotnet /usr/local/bin/dotnet
 
 COPY qa/ ./qa/
 COPY default.pylintrc .
