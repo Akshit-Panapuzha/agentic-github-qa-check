@@ -112,3 +112,52 @@ def test_lint_file_js_returns_empty_on_subprocess_error():
         mock_run.side_effect = FileNotFoundError("eslint not found")
         findings = lint_file("src/app.js", "const x = 1;\n")
     assert findings == []
+
+
+# --- C# ---
+
+SAMPLE_DOTNET_REPORT = json.dumps([{
+    "FileName": "Foo.cs",
+    "FilePath": "/tmp/qa_cs_xxx/Foo.cs",
+    "FileChanges": [
+        {
+            "LineNumber": 5,
+            "CharNumber": 0,
+            "DiagnosticId": "IDE0055",
+            "FormatDescription": "Fix formatting",
+        }
+    ],
+}])
+
+
+def test_lint_file_cs_maps_findings_to_low(tmp_path):
+    report_path = tmp_path / "report.json"
+    report_path.write_text(SAMPLE_DOTNET_REPORT)
+
+    with patch("qa.linter.subprocess.run"), \
+         patch("qa.linter.tempfile.mkdtemp", return_value=str(tmp_path)), \
+         patch("qa.linter.shutil.rmtree"):
+        findings = lint_file("src/Foo.cs", "class Foo{}\n")
+
+    assert len(findings) == 1
+    assert findings[0].severity == "low"
+    assert findings[0].line_number == 5
+    assert findings[0].filename == "src/Foo.cs"
+    assert "IDE0055" in findings[0].title
+
+
+def test_lint_file_cs_returns_empty_when_no_report(tmp_path):
+    with patch("qa.linter.subprocess.run"), \
+         patch("qa.linter.tempfile.mkdtemp", return_value=str(tmp_path)), \
+         patch("qa.linter.shutil.rmtree"):
+        findings = lint_file("src/Foo.cs", "class Foo {}\n")
+    assert findings == []
+
+
+def test_lint_file_cs_returns_empty_on_subprocess_error(tmp_path):
+    with patch("qa.linter.subprocess.run") as mock_run, \
+         patch("qa.linter.tempfile.mkdtemp", return_value=str(tmp_path)), \
+         patch("qa.linter.shutil.rmtree"):
+        mock_run.side_effect = FileNotFoundError("dotnet not found")
+        findings = lint_file("src/Foo.cs", "class Foo {}\n")
+    assert findings == []
