@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 from qa.config import Config
 from qa.models import Finding
-from qa.orchestrator import is_ignored, run
+from qa.orchestrator import SUPPORTED_EXTENSIONS, is_ignored, run
 
 
 def test_is_ignored_matches_wildcard():
@@ -72,6 +72,50 @@ def test_run_skips_ignored_paths():
          patch("qa.orchestrator.lint_file") as mock_lint:
         MockGithub.return_value.get_repo.return_value = mock_repo
         findings = run("token", "owner/repo", 42, "def456", Config(ignore_paths=["migrations/*"]))
+
+    mock_lint.assert_not_called()
+    assert findings == []
+
+
+def test_supported_extensions_includes_all_languages():
+    assert ".py" in SUPPORTED_EXTENSIONS
+    assert ".js" in SUPPORTED_EXTENSIONS
+    assert ".ts" in SUPPORTED_EXTENSIONS
+    assert ".tsx" in SUPPORTED_EXTENSIONS
+    assert ".jsx" in SUPPORTED_EXTENSIONS
+    assert ".cs" in SUPPORTED_EXTENSIONS
+
+
+def test_run_returns_findings_for_js_files():
+    mock_file = MagicMock()
+    mock_file.filename = "src/app.js"
+    mock_file.patch = "@@ -1,1 +1,2 @@\n line1\n+new line\n"
+
+    mock_content = MagicMock()
+    mock_content.decoded_content = b"const foo = 1;\n"
+
+    mock_repo = _make_mock_repo([mock_file], {"src/app.js": mock_content})
+    expected = Finding("src/app.js", 3, "critical", "[no-unused-vars]", "unused", "")
+
+    with patch("qa.orchestrator.Github") as MockGithub, \
+         patch("qa.orchestrator.lint_file", return_value=[expected]):
+        MockGithub.return_value.get_repo.return_value = mock_repo
+        findings = run("token", "owner/repo", 42, "def456", Config())
+
+    assert findings == [expected]
+
+
+def test_run_skips_unsupported_extensions():
+    mock_file = MagicMock()
+    mock_file.filename = "README.md"
+    mock_file.patch = "@@ -1 +1 @@\n+# Title\n"
+
+    mock_repo = _make_mock_repo([mock_file], {})
+
+    with patch("qa.orchestrator.Github") as MockGithub, \
+         patch("qa.orchestrator.lint_file") as mock_lint:
+        MockGithub.return_value.get_repo.return_value = mock_repo
+        findings = run("token", "owner/repo", 42, "def456", Config())
 
     mock_lint.assert_not_called()
     assert findings == []

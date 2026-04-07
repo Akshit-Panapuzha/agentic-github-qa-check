@@ -1,7 +1,10 @@
 import fnmatch
+from pathlib import Path
 from typing import List
 
 from github import Github
+
+SUPPORTED_EXTENSIONS = {".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".cs"}
 
 from qa.config import Config
 from qa.linter import lint_file
@@ -27,7 +30,7 @@ def run(
     all_findings: List[Finding] = []
 
     for f in pr.get_files():
-        if not f.filename.endswith(".py"):
+        if Path(f.filename).suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
         if is_ignored(f.filename, config.ignore_paths):
             continue
