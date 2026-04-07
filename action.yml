@@ -1,0 +1,30 @@
+name: 'AI QA Linter'
+description: 'Runs pylint on changed Python files and posts inline PR comments.'
+branding:
+  icon: 'check-circle'
+  color: 'green'
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
+  pr-number:
+    description: 'PR number'
+    required: true
+  repo:
+    description: 'Repository name (owner/repo)'
+    required: true
+  base-sha:
+    description: 'Base branch SHA'
+    required: true
+  head-sha:
+    description: 'Head branch SHA'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_TOKEN: ${{ inputs.github-token }}
+    PR_NUMBER: ${{ inputs.pr-number }}
+    REPO: ${{ inputs.repo }}
+    BASE_SHA: ${{ inputs.base-sha }}
+    HEAD_SHA: ${{ inputs.head-sha }}
